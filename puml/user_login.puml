@@ -1,0 +1,21 @@
+@startuml
+actor User
+participant "HTTP Server" as HttpServer
+participant "AuthHandler" as AuthHandler
+participant "UserService" as UserService
+participant "UserRepository" as UserRepository
+database "Database" as Database
+
+User -> HttpServer: POST /login
+HttpServer -> AuthHandler: HandleLogin(request)
+AuthHandler -> UserService: ValidateUser(username, password)
+UserService -> UserRepository: GetUserByUsername(username)
+UserRepository -> Database: SELECT * FROM users WHERE username = ?
+Database -> UserRepository: User data
+UserRepository -> UserService: User data
+UserService -> UserService: Validate credentials
+UserService -> UserService: Generate JWT token
+UserService -> AuthHandler: JWT token
+AuthHandler -> HttpServer: Response with JWT token
+HttpServer -> User: Response with JWT token
+@enduml

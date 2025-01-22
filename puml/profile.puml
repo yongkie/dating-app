@@ -1,0 +1,30 @@
+@startuml
+actor User
+participant "HTTP Server" as HttpServer
+participant "ProfileHandler" as ProfileHandler
+participant "UserService" as UserService
+participant "UserRepository" as UserRepository
+database "Database" as Database
+
+User -> HttpServer: PUT /profile
+HttpServer -> ProfileHandler: HandleUpdateProfile(request)
+ProfileHandler -> UserService: UpdateProfile(userID, profileData)
+UserService -> UserRepository: UpdateUserProfile(userID, profileData)
+UserRepository -> Database: UPDATE profiles SET ... WHERE user_id = ?
+Database -> UserRepository: Update result
+UserRepository -> UserService: Update result
+UserService -> ProfileHandler: Update result
+ProfileHandler -> HttpServer: Response with update result
+HttpServer -> User: Response with update result
+
+User -> HttpServer: GET /profile/{userID}
+HttpServer -> ProfileHandler: HandleViewProfile(userID)
+ProfileHandler -> UserService: GetProfile(userID)
+UserService -> UserRepository: GetUserProfile(userID)
+UserRepository -> Database: SELECT * FROM profiles WHERE user_id = ?
+Database -> UserRepository: Profile data
+UserRepository -> UserService: Profile data
+UserService -> ProfileHandler: Profile data
+ProfileHandler -> HttpServer: Response with profile data
+HttpServer -> User: Response with profile data
+@enduml

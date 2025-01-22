@@ -1,0 +1,26 @@
+@startuml
+actor User
+participant "HTTP Server" as HttpServer
+participant "PurchaseHandler" as PurchaseHandler
+participant "UserService" as UserService
+participant "UserRepository" as UserRepository
+database "Database" as Database
+
+User -> HttpServer: POST /purchase
+HttpServer -> PurchaseHandler: HandlePurchase(request)
+PurchaseHandler -> UserService: ProcessPurchase(userID, purchaseType)
+alt purchaseType == "remove_quota"
+    UserService -> UserRepository: RemoveSwipeQuota(userID)
+    UserRepository -> Database: UPDATE users SET swipe_quota = 0 WHERE id = ?
+    Database -> UserRepository: Update result
+    UserRepository -> UserService: Update result
+else purchaseType == "add_verified"
+    UserService -> UserRepository: AddVerifiedLabel(userID)
+    UserRepository -> Database: UPDATE users SET verified = true WHERE id = ?
+    Database -> UserRepository: Update result
+    UserRepository -> UserService: Update result
+end
+UserService -> PurchaseHandler: Purchase result
+PurchaseHandler -> HttpServer: Response with purchase result
+HttpServer -> User: Response with purchase result
+@enduml

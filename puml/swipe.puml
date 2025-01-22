@@ -1,0 +1,19 @@
+@startuml
+actor User
+participant "HTTP Server" as HttpServer
+participant "SwipeHandler" as SwipeHandler
+participant "UserService" as UserService
+participant "SwipeRepository" as SwipeRepository
+database "Database" as Database
+
+User -> HttpServer: POST /swipe
+HttpServer -> SwipeHandler: HandleSwipe(request)
+SwipeHandler -> UserService: ProcessSwipe(userID, targetID, action)
+UserService -> SwipeRepository: RecordSwipe(userID, targetID, action)
+SwipeRepository -> Database: INSERT INTO swipes (user_id, target_id, action) VALUES (?, ?, ?)
+Database -> SwipeRepository: Insert result
+SwipeRepository -> UserService: Insert result
+UserService -> SwipeHandler: Swipe result
+SwipeHandler -> HttpServer: Response with swipe result
+HttpServer -> User: Response with swipe result
+@enduml
