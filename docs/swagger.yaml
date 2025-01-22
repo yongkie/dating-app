@@ -44,17 +44,42 @@ paths:
             type: object
       summary: User Login
       tags:
-      - Auth
+      - User Login
   /purchase:
     post:
       consumes:
       - application/json
       description: Allows a user to purchase a premium package
+      parameters:
+      - description: User ID
+        in: body
+        name: userID
+        required: true
+        schema:
+          type: string
+      - description: Purchase type (remove_quota or add_verified)
+        in: body
+        name: purchaseType
+        required: true
+        schema:
+          type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -91,12 +116,31 @@ paths:
             type: object
       summary: Signup a new user
       tags:
-      - auth
+      - Sign Up User
   /swipe:
     post:
       consumes:
       - application/json
       description: Records a swipe action from a user
+      parameters:
+      - description: User ID
+        in: body
+        name: userID
+        required: true
+        schema:
+          type: string
+      - description: Target User ID
+        in: body
+        name: targetID
+        required: true
+        schema:
+          type: string
+      - description: Swipe action (left or right)
+        in: body
+        name: action
+        required: true
+        schema:
+          type: string
       produces:
       - application/json
       responses:
@@ -106,7 +150,19 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Swipe action
       tags:
-      - Actions
+      - Swipe Action
 swagger: "2.0"

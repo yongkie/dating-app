@@ -66,7 +66,7 @@ func main() {
 
 // @Summary Signup a new user
 // @Description Create a new user account
-// @Tags auth
+// @Tags Sign Up User
 // @Accept json
 // @Produce json
 // @Param user body models.User true "User Data"
@@ -89,7 +89,7 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 
 // @Summary User Login
 // @Description Logs in a user and returns a token
-// @Tags Auth
+// @Tags User Login
 // @Accept  json
 // @Produce  json
 // @Param username body string true "Username"
@@ -103,12 +103,37 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Swipe action
 // @Description Records a swipe action from a user
-// @Tags Actions
+// @Tags Swipe Action
 // @Accept  json
 // @Produce  json
+// @Param userID body string true "User ID"
+// @Param targetID body string true "Target User ID"
+// @Param action body string true "Swipe action (left or right)"
 // @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /swipe [post]
 func SwipeHandler(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		UserID   string `json:"userID"`
+		TargetID string `json:"targetID"`
+		Action   string `json:"action"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if request.Action != "left" && request.Action != "right" {
+		http.Error(w, "Invalid action", http.StatusBadRequest)
+		return
+	}
+
+	if err := userService.Swipe(request.UserID, request.TargetID, request.Action); err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Swipe action recorded"})
 }
@@ -118,9 +143,40 @@ func SwipeHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags Payments
 // @Accept  json
 // @Produce  json
+// @Param userID body string true "User ID"
+// @Param purchaseType body string true "Purchase type (remove_quota or add_verified)"
 // @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /purchase [post]
 func PurchaseHandler(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		UserID       string `json:"userID"`
+		PurchaseType string `json:"purchaseType"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if request.PurchaseType != "remove_quota" && request.PurchaseType != "add_verified" {
+		http.Error(w, "Invalid purchase type", http.StatusBadRequest)
+		return
+	}
+
+	if request.PurchaseType == "remove_quota" {
+		if err := userService.RemoveSwipeQuota(request.UserID); err != nil {
+			http.Error(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+	} else if request.PurchaseType == "add_verified" {
+		if err := userService.AddVerifiedLabel(request.UserID); err != nil {
+			http.Error(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Premium package purchased"})
 }

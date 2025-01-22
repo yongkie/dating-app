@@ -8,6 +8,8 @@ import (
 type UserService interface {
 	Signup(user models.User) error
 	Login(username string) (*models.User, error)
-	Swipe(userID, targetID string) error
+	Swipe(userID, targetID, action string) error
 	PurchasePremium(userID string) error
+	RemoveSwipeQuota(userID string) error
+	AddVerifiedLabel(userID string) error
 }
