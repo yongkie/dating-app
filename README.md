@@ -20,6 +20,12 @@ dating-app/
 
 ---
 
+### Prerequisites
+
+- Go 1.16 or later
+- PostgreSQL
+- Git
+
 ## API Endpoints
 
 ### **1. User Signup**
