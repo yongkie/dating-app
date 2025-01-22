@@ -1,8 +1,8 @@
-## Dating App
+# Dating App
 
-### Struktur Proyek
+## Project Structure
 
-```plaintext
+```
 dating-app/
 ├── main.go              # Main application entry point
 ├── .env                 # Environment variables
@@ -25,7 +25,7 @@ dating-app/
 ### **1. User Signup**
 **Endpoint:** `/signup`  
 **Method:** `POST`  
-**Description:** Mendaftarkan pengguna baru.  
+**Description:** Register a new user  
 
 **Request Body:**
 ```json
@@ -44,7 +44,7 @@ dating-app/
 ### **2. User Login**
 **Endpoint:** `/login`  
 **Method:** `POST`  
-**Description:** Autentikasi pengguna dan mengembalikan token sesi.  
+**Description:** User authentication  
 
 **Request Body:**
 ```json
@@ -55,7 +55,7 @@ dating-app/
 ```
 
 **Responses:**
-- `200 OK` – Login successful (Token dikembalikan)
+- `200 OK` – Login successful (Token returned)
 - `400 Bad Request` – Invalid request payload
 
 ---
@@ -63,7 +63,7 @@ dating-app/
 ### **3. Swipe Action**
 **Endpoint:** `/swipe`  
 **Method:** `POST`  
-**Description:** Merekam tindakan swipe dari pengguna.  
+**Description:** Save swipe action  
 
 **Request Body:**
 ```json
@@ -84,7 +84,7 @@ dating-app/
 ### **4. Purchase Action**
 **Endpoint:** `/purchase`  
 **Method:** `POST`  
-**Description:** Menangani transaksi untuk menghapus batasan swipe dan menambahkan label verifikasi.  
+**Description:** Handle transaction and verification  
 
 **Request Body:**
 ```json
@@ -124,9 +124,9 @@ dating-app/
 
 ---
 
-## **Cara Menjalankan Service**
+## **How To Run The Service**
 
-1. Clone repository:
+1. Clone the repository:
    ```bash
    git clone https://github.com/your-repo/dating-app.git
    cd dating-app
@@ -137,16 +137,16 @@ dating-app/
    go mod tidy
    ```
 
-3. Konfigurasi database:
-   - Buat database sesuai dengan schema di atas.
-   - Perbarui koneksi database di `db/db.go`.
+3. Database Configuration:
+   - Create a database using the schema
+   - Set up the database connection in `db/db.go`.
 
-4. Jalankan service:
+4. Run the service:
    ```bash
    go run main.go
    ```
 
 ---
 
-## **Lisensi**
-Proyek ini dilisensikan di bawah **MIT License**.
+## **License**
+This project is licensed under the **MIT License**.
