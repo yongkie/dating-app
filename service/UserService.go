@@ -12,4 +12,5 @@ type UserService interface {
 	PurchasePremium(userID string) error
 	RemoveSwipeQuota(userID string) error
 	AddVerifiedLabel(userID string) error
+	ValidateUser(username, password string) (models.User, error)
 }

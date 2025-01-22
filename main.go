@@ -9,9 +9,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	_ "dating-app/docs"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -39,9 +41,13 @@ func init() {
 	if err = db.Ping(); err != nil {
 		log.Fatal(err)
 	}
+
+	// Initialize userService
+	userService = &service.UserServiceImpl{DB: db}
 }
 
 func main() {
+
 	r := mux.NewRouter()
 
 	// Swagger UI route (use swaggerFiles.Handler directly)
@@ -79,6 +85,12 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
+
+	if user.Username == "" || user.Password == "" {
+		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+
 	if err := userService.Signup(user); err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
@@ -97,8 +109,37 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} map[string]string
 // @Router /login [post]
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if request.Username == "" || request.Password == "" {
+		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Validate user credentials
+	user, err := userService.ValidateUser(request.Username, request.Password)
+	if err != nil {
+		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		return
+	}
+
+	// Generate JWT token
+	token, err := generateJWT(user)
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful"})
+	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful", "token": token})
 }
 
 // @Summary Swipe action
@@ -121,17 +162,22 @@ func SwipeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+
+	if request.UserID == "" || request.TargetID == "" || request.Action == "" {
+		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
 		return
 	}
 
 	if request.Action != "left" && request.Action != "right" {
-		http.Error(w, "Invalid action", http.StatusBadRequest)
+		http.Error(w, `{"error": "Invalid action"}`, http.StatusBadRequest)
 		return
 	}
 
 	if err := userService.Swipe(request.UserID, request.TargetID, request.Action); err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
+		http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -156,27 +202,54 @@ func PurchaseHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+
+	if request.UserID == "" || request.PurchaseType == "" {
+		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
 		return
 	}
 
 	if request.PurchaseType != "remove_quota" && request.PurchaseType != "add_verified" {
-		http.Error(w, "Invalid purchase type", http.StatusBadRequest)
+		http.Error(w, `{"error": "Invalid purchase type"}`, http.StatusBadRequest)
 		return
 	}
 
 	if request.PurchaseType == "remove_quota" {
 		if err := userService.RemoveSwipeQuota(request.UserID); err != nil {
-			http.Error(w, "Database error", http.StatusInternalServerError)
+			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 			return
 		}
 	} else if request.PurchaseType == "add_verified" {
 		if err := userService.AddVerifiedLabel(request.UserID); err != nil {
-			http.Error(w, "Database error", http.StatusInternalServerError)
+			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 			return
 		}
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Premium package purchased"})
+	json.NewEncoder(w).Encode(map[string]string{"message": "Purchase action completed"})
+}
+
+func generateJWT(user models.User) (string, error) {
+	// Define token expiration time
+	expirationTime := time.Now().Add(24 * time.Hour)
+
+	// Create the JWT claims, which includes the username and expiry time
+	claims := &jwt.StandardClaims{
+		Subject:   user.ID,
+		ExpiresAt: expirationTime.Unix(),
+	}
+
+	// Create the token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Sign the token with a secret key
+	tokenString, err := token.SignedString([]byte("your_secret_key"))
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
 }
